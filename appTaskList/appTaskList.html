@@ -4,55 +4,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Tarefas</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
-    <link rel="stylesheet" type="text/css"
-        href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/bold/style.css" />
+    <title>Lista de Tarefas</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/dist/umd/supabase.min.js"></script>
+    <script src="assets/js/supabase.js"></script>
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/bold/style.css">
 </head>
 
-<body class="bg-slate-700 min-h-screen">
+<body class="bg-slate-700 min-h-screen px-4 py-10">
 
-    <div class="max-w-md mx-auto bg-slate-800 shadow-lg rounded-lg overflow-hidden mt-16 border border-slate-700">
+    <!-- CONTAINER PRINCIPAL -->
+    <div class="w-full max-w-md mx-auto bg-slate-800 shadow-lg rounded-lg overflow-hidden border border-slate-700">
 
-        <div class="px-4 py-2">
-            <h1
-                class="text-2xl text-center mt-5 font-bold bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500 bg-clip-text text-transparent transition duration-500">
-                Lista de Tarefas 
-            </h1>
-            <div class="flex flex-col mt-5 w-full justify-center items-center ">
+        <div class="px-6 py-8">
 
-                <div class="w-full max-w-sm mx-auto px-4 py-2">
-                    <div class="flex items-center border-b-2 border-cyan-800 py-2">
-                        <input placeholder="Adicione sua Tarefa" type="text" name="tarefa" id="tarefa"
-                            class="appearance-none bg-transparent border-none w-full text-slate-100 mr-3 py-1 px-2 leading-tight focus:outline-none">
+            <!-- CABEÇALHO -->
+            <div class="text-center mb-8">
 
-                        <button
-                            class="flex-shrink-0 bg-cyan-800 border-cyan-800 hover:bg-cyan-700 hover:border-cyan-700 text-sm border-4 text-white py-1 px-2 rounded"
-                            id="criar"> <i class="ph-bold ph-plus-circle"></i>
-                        </button>
+                <i class="ph-bold ph-check-circle text-cyan-400 text-4xl"></i>
 
-                        <button hidden
-                            class="flex-shrink-0 bg-cyan-800 border-cyan-800 hover:bg-cyan-700 hover:border-cyan-700 text-sm border-4 text-white py-1 px-2 rounded"
-                            id="confirmEdit"> <i class="ph-bold ph-pencil-simple"></i>
-                        </button>
-                    </div>
+                <h1
+                    class="text-3xl mt-3 font-bold bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                    Lista de Tarefas
+                </h1>
 
-                </div>
+                <p class="text-slate-400 mt-2">
+                    Organize suas tarefas
+                </p>
 
-                <div class="flex justify-center gap-2">
+            </div>
+
+
+            <!-- CAMPO DE NOVA TAREFA -->
+            <div class="mb-8">
+
+                <label for="tarefa" class="block text-slate-300 mb-2">
+                    Nova tarefa
+                </label>
+
+                <div class="flex items-center border-b-2 border-cyan-800 py-2">
+
+                    <i class="ph-bold ph-pencil-simple text-cyan-400 mr-3"></i>
+
+                    <input
+                        placeholder="Digite sua tarefa..."
+                        type="text"
+                        name="tarefa"
+                        id="tarefa"
+                        class="appearance-none bg-transparent border-none w-full text-slate-100 mr-3 py-1 px-2 leading-tight focus:outline-none placeholder-slate-500">
+
+                    <button
+                        id="criar"
+                        class="flex-shrink-0 bg-cyan-800 hover:bg-cyan-700 text-white p-2 rounded-lg transition"
+                        title="Adicionar tarefa">
+
+                        <i class="ph-bold ph-plus"></i>
+
+                    </button>
+
+                    <button
+                        hidden
+                        id="confirmEdit"
+                        class="flex-shrink-0 bg-cyan-800 hover:bg-cyan-700 text-white p-2 rounded-lg transition"
+                        title="Confirmar edição">
+
+                        <i class="ph-bold ph-check"></i>
+
+                    </button>
 
                 </div>
 
             </div>
+
+
+            <!-- LISTA DE TAREFAS -->
+            <div>
+
+                <div class="flex items-center justify-between mb-4">
+
+                    <h2 class="text-lg font-semibold text-slate-200">
+                        Minhas tarefas
+                    </h2>
+
+                    <span class="text-sm text-slate-500">
+                        Tarefas
+                    </span>
+
+                </div>
+
+                <div id="listaDeDados" class="flex flex-col gap-3">
+                </div>
+
+            </div>
+
         </div>
+
     </div>
 
-    <div class="flex justify-center ">
-        <div id="listaDeDados" class="flex flex-col gap-5 mt-3 w-full max-w-md mx-auto">
-
-        </div>
-    </div>
 
     <script>
         var tarefas = []
@@ -60,23 +112,38 @@
 
         document.getElementById("criar").addEventListener("click", criarTarefa);
 
-        function criarTarefa() {
-            let tarefa = document.getElementById("tarefa").value
-            let idTarefa = tarefas.length
+        async function criarTarefa() {
+            // let tarefa = document.getElementById("tarefa").value
+            // let idTarefa = tarefas.length
 
-            if (tarefa == "") {
-                alert("Digite a tarefa!")
-                return
+            // if (tarefa == "") {
+            //     alert("Digite a tarefa!")
+            //     return
+            // }
+
+            // tarefas.push([idTarefa, tarefa, true])
+
+            // mostrarLista()
+            // document.getElementById("tarefa").value = ""
+
+            let tarefa = document.getElementById("tarefa").value
+
+            const { data, error } = await supabaseClient
+                .from('tasks')
+                .insert([
+                    { name: tarefa, id_user: sessionStorage.getItem("userID"), status: false }
+                ])
+
+            if (error) {
+                console.error('Erro ao criar tarefa:', error)
+            } else {
+                console.log('Tarefa criada com sucesso:', data)
             }
 
-            tarefas.push([idTarefa, tarefa, false])
 
-            mostrarLista()
-            document.getElementById("tarefa").value = ""
+
             return
         }
-
-        /* document.getElementById("mostrarLista").addEventListener("click", mostrarLista); */
 
         function mostrarLista() {
             let listaDeDados = document.getElementById("listaDeDados");
@@ -92,34 +159,34 @@
                 }
 
                 listaDeDados.innerHTML += `
-                <div class="flex justify-between items-center w-full border p-2 border-slate-800 rounded-lg bg-slate-800">
-                    
-                    <span class="text-cyan-400 font-medium text-lg">
-                        ${tarefa[1]}
-                    </span>
+                    <div  class="flex justify-between items-center w-80 border-5 p-2 border-gray-800 rounded-lg rounded-lg shadow-lg bg-gradient-to-r from-blue-500 via-blue-400 to-blue-500">
                         
-                    <div class=" flex gap-2">
-                        <button 
-                            id="btnStatus${tarefa[0]}"  
-                            class="btn bg-green-800 text-white p-2 rounded btnStatus">                             
-                            ${icon}
-                        </button>
+                        <span class="text-black font-bold px-3">
+                            ${tarefa[1]}
+                        </span>
+                            
+                        <div class="flex gap-2">
+                            <button 
+                                id="btnStatus${tarefa[0]}"  
+                                class="btn bg-green-700 hover:bg-green-900 text-white p-2 rounded btnStatus">                             
+                                ${icon}
+                            </button>
 
-                        <button 
-                        id="btnEdit${tarefa[0]}"  
-                        class="btn bg-blue-800 text-white p-2 rounded btnEdit">    
-                            <i id="btnEdit${tarefa[0]}" class="ph-bold ph-pencil-simple btnEdit"></i>
-                        </button>
+                            <button 
+                            id="btnEdit${tarefa[0]}"  
+                            class="btn bg-blue-700 hover:bg-blue-900 text-white p-2 rounded btnEdit">    
+                                <i id="btnEdit${tarefa[0]}" class="ph-bold ph-pencil-simple btnEdit"></i>
+                            </button>
 
-                         <button 
-                        id="btnDelete${tarefa[0]}"  
-                        class="btn bg-red-800 text-white p-2 rounded btnDelete">    
-                            <i id="btnDelete${tarefa[0]}" class="ph-bold ph-trash btnDelete"></i>
-                        </button>
+                            <button 
+                            id="btnDelete${tarefa[0]}"
+                            class="btn bg-red-700 hover:bg-red-900 text-white p-2 rounded btnDelete">    
+                                <i id="btnDelete${tarefa[0]}" class="ph-bold ph-trash btnDelete"></i>
+                            </button>
+                        </div>
+
                     </div>
-
-                </div>
-                        `;
+                `;
             });
         }
 
@@ -135,36 +202,48 @@
             const id = elemento.id
             const idOnlyNumber = id.replace("btnEdit", '')
 
-            parseInt(idOnlyNumber)
+            const posicao = tarefas.findIndex(
+                item => item[0] === Number(idOnlyNumber)
+            );
 
-            document.getElementById("tarefa").value = tarefas[idOnlyNumber][1]
+            console.log(posicao, 'posicao')
+            if (posicao === -1) {
+                console.log("Tarefa não encontrada");
+                return;
+            }
+
+            // console.log("tarefa Editada: " + tarefas[posicao][1]);
+
+            document.getElementById("tarefa").value = tarefas[posicao][1]
 
             document.getElementById("confirmEdit").removeAttribute("hidden")
 
-            document.getElementsByClassName("btnDelete")[0].setAttribute("hidden", true)
-            document.getElementsByClassName("btnStatus")[0].setAttribute("hidden", true)
-            document.getElementsByClassName("btnEdit")[0].setAttribute("hidden", true)
+            document.getElementById("btnDelete" + idOnlyNumber).setAttribute("hidden", true)
+
             document.getElementById("criar").setAttribute("hidden", true)
 
+            document.getElementById("btnStatus" + idOnlyNumber).setAttribute("hidden", true)
 
+            document.getElementById("tarefa").setAttribute("idTarefaEdicao", posicao)
         }
 
-        document.getElementById("confirmEdit").addEventListener("click", function () {
-            confirmEdit(idTarefa);
-        });
+        document.getElementById("confirmEdit").addEventListener("click", confirmEdit);
 
-        function confirmEdit(idTarefa) {
-            tarefas[idTarefa][1] = document.getElementById("tarefa").value
+        function confirmEdit() {
+            const idTarefa = document.getElementById("tarefa").getAttribute("idTarefaEdicao");
 
-            if (tarefa == "") {
+            if (document.getElementById("tarefa").value == "") {
                 alert("Digite a tarefa!")
                 return
             }
 
+            tarefas[idTarefa][1] = document.getElementById("tarefa").value
+
+            document.getElementById("criar").removeAttribute("hidden")
+            document.getElementById("confirmEdit").setAttribute("hidden", true)
+
             mostrarLista()
             document.getElementById("tarefa").value = ""
-            document.getElementById("confirmEdit").setAttribute("hidden", true)
-            document.getElementById("criar").removeAttribute("hidden")
             return
         }
 
@@ -173,25 +252,29 @@
             if (event.target.classList.contains("btnStatus")) {
                 updateStatus(event.target);
             }
-
         });
 
         function updateStatus(idTarefa) {
-            const id = idTarefa.id
-            const idOnlyNumber = id.replace("btnStatus", '')
+            const id = idTarefa.id;
+            const idOnlyNumber = id.replace("btnStatus", "");
 
-            parseInt(idOnlyNumber)
+            const posicao = tarefas.findIndex(
+                item => item[0] === Number(idOnlyNumber)
+            );
 
-            if (tarefas[idOnlyNumber][2] === true) {
-                tarefas[idOnlyNumber][2] = false
-            } else {
-                tarefas[idOnlyNumber][2] = true
+            if (posicao === -1) {
+                console.log("Tarefa não encontrada");
+                return;
             }
 
-            console.log("tarefa Editada" + tarefas[idOnlyNumber][2])
+            if (tarefas[posicao][2] === true) {
+                tarefas[posicao][2] = false;
+            } else {
+                tarefas[posicao][2] = true;
+            }
 
-            mostrarLista()
 
+            mostrarLista();
         }
 
         document.getElementById("listaDeDados").addEventListener("click", function (event) {
