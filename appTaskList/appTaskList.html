@@ -8,8 +8,7 @@
     <title>Lista de Tarefas</title>
 
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/dist/umd/supabase.min.js"></script>
-    <script src="assets/js/supabase.js"></script>
+    <script src="assets/js/api.js"></script>
 
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/bold/style.css">
@@ -35,12 +34,16 @@
                 <p class="text-slate-400 mt-2">
                     Organize suas tarefas
                 </p>
+                <p id="userLabel" class="text-cyan-300 text-sm mt-2"></p>
+                <button id="logout" type="button" class="text-slate-400 hover:text-white text-sm mt-2">
+                    Sair
+                </button>
 
             </div>
 
 
             <!-- CAMPO DE NOVA TAREFA -->
-            <div class="mb-8">
+            <form id="taskForm" class="mb-8">
 
                 <label for="tarefa" class="block text-slate-300 mb-2">
                     Nova tarefa
@@ -55,9 +58,11 @@
                         type="text"
                         name="tarefa"
                         id="tarefa"
+                        required
                         class="appearance-none bg-transparent border-none w-full text-slate-100 mr-3 py-1 px-2 leading-tight focus:outline-none placeholder-slate-500">
 
                     <button
+                        type="submit"
                         id="criar"
                         class="flex-shrink-0 bg-cyan-800 hover:bg-cyan-700 text-white p-2 rounded-lg transition"
                         title="Adicionar tarefa">
@@ -66,32 +71,27 @@
 
                     </button>
 
-                    <button
-                        hidden
-                        id="confirmEdit"
-                        class="flex-shrink-0 bg-cyan-800 hover:bg-cyan-700 text-white p-2 rounded-lg transition"
-                        title="Confirmar edição">
-
-                        <i class="ph-bold ph-check"></i>
-
-                    </button>
-
                 </div>
 
-            </div>
+            </form>
+
+            <p id="taskError" role="alert" class="text-red-300 text-sm mb-4" hidden></p>
 
 
             <!-- LISTA DE TAREFAS -->
             <div>
 
                 <div class="flex items-center justify-between mb-4">
-
-                    <h2 class="text-lg font-semibold text-slate-200">
-                        Minhas tarefas
-                    </h2>
-
-                    <span class="text-sm text-slate-500">
-                        Tarefas
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-100">
+                            Minhas tarefas
+                        </h2>
+                        <p id="taskProgress" class="text-xs text-slate-400 mt-1">
+                            Tudo em dia
+                        </p>
+                    </div>
+                    <span id="taskCount" class="text-xs font-semibold text-cyan-200 bg-cyan-950 border border-cyan-800 px-3 py-1.5 rounded-full">
+                        0 tarefas
                     </span>
 
                 </div>
@@ -107,197 +107,224 @@
 
 
     <script>
-        var tarefas = []
-        let idTarefa = tarefas.length
+        const userId = sessionStorage.getItem("userID");
+        const taskInput = document.getElementById("tarefa");
+        const taskForm = taskInput.closest("form");
+        const taskList = document.getElementById("listaDeDados");
+        const taskError = document.getElementById("taskError");
+        const submitButton = document.getElementById("criar");
+        let tasks = [];
+        let editingTaskId = null;
 
-        document.getElementById("criar").addEventListener("click", criarTarefa);
-
-        async function criarTarefa() {
-            // let tarefa = document.getElementById("tarefa").value
-            // let idTarefa = tarefas.length
-
-            // if (tarefa == "") {
-            //     alert("Digite a tarefa!")
-            //     return
-            // }
-
-            // tarefas.push([idTarefa, tarefa, true])
-
-            // mostrarLista()
-            // document.getElementById("tarefa").value = ""
-
-            let tarefa = document.getElementById("tarefa").value
-
-            const { data, error } = await supabaseClient
-                .from('tasks')
-                .insert([
-                    { name: tarefa, id_user: sessionStorage.getItem("userID"), status: false }
-                ])
-
-            if (error) {
-                console.error('Erro ao criar tarefa:', error)
-            } else {
-                console.log('Tarefa criada com sucesso:', data)
-            }
-
-
-
-            return
+        if (!userId) {
+            window.location.replace("login.html");
+        } else {
+            document.getElementById("userLabel").textContent =
+                `Olá, ${sessionStorage.getItem("userName") || sessionStorage.getItem("email")}`;
+            loadTasks();
         }
 
-        function mostrarLista() {
-            let listaDeDados = document.getElementById("listaDeDados");
+        document.getElementById("logout").addEventListener("click", () => {
+            sessionStorage.clear();
+            window.location.replace("login.html");
+        });
 
-            listaDeDados.innerHTML = ``
-
-            tarefas.forEach(function (tarefa) {
-                let icon = ''
-                if (tarefa[2] == true) {
-                    icon = `<i id="btnStatus${tarefa[0]}" class="ph-bold ph-check-circle btnStatus"></i>`
-                } else {
-                    icon = `<i id="btnStatus${tarefa[0]}" class="ph-bold ph-circle btnStatus"></i>`
+        async function loadTasks() {
+            try {
+                const savedTasks = await OnlineStorage.get(OnlineStorage.tasksStorageKey(userId), []);
+                if (!Array.isArray(savedTasks)) {
+                    throw new Error("Os dados de tarefas salvos na API estão inválidos.");
                 }
 
-                listaDeDados.innerHTML += `
-                    <div  class="flex justify-between items-center w-80 border-5 p-2 border-gray-800 rounded-lg rounded-lg shadow-lg bg-gradient-to-r from-blue-500 via-blue-400 to-blue-500">
-                        
-                        <span class="text-black font-bold px-3">
-                            ${tarefa[1]}
-                        </span>
-                            
-                        <div class="flex gap-2">
-                            <button 
-                                id="btnStatus${tarefa[0]}"  
-                                class="btn bg-green-700 hover:bg-green-900 text-white p-2 rounded btnStatus">                             
-                                ${icon}
-                            </button>
+                tasks = savedTasks;
+                renderTasks();
+            } catch (error) {
+                showTaskError(error.message);
+            }
+        }
 
-                            <button 
-                            id="btnEdit${tarefa[0]}"  
-                            class="btn bg-blue-700 hover:bg-blue-900 text-white p-2 rounded btnEdit">    
-                                <i id="btnEdit${tarefa[0]}" class="ph-bold ph-pencil-simple btnEdit"></i>
-                            </button>
+        function showTaskError(message) {
+            taskError.textContent = message;
+            taskError.hidden = false;
+        }
 
-                            <button 
-                            id="btnDelete${tarefa[0]}"
-                            class="btn bg-red-700 hover:bg-red-900 text-white p-2 rounded btnDelete">    
-                                <i id="btnDelete${tarefa[0]}" class="ph-bold ph-trash btnDelete"></i>
-                            </button>
-                        </div>
+        function clearTaskError() {
+            taskError.textContent = "";
+            taskError.hidden = true;
+        }
 
-                    </div>
-                `;
+        function renderTasks() {
+            taskList.replaceChildren();
+            const completedCount = tasks.filter(task => task.completed).length;
+            const pendingCount = tasks.length - completedCount;
+            document.getElementById("taskCount").textContent =
+                `${tasks.length} ${tasks.length === 1 ? "tarefa" : "tarefas"}`;
+            document.getElementById("taskProgress").textContent = tasks.length
+                ? `${pendingCount} pendente${pendingCount === 1 ? "" : "s"} · ${completedCount} concluída${completedCount === 1 ? "" : "s"}`
+                : "Sua lista começa aqui";
+
+            if (tasks.length === 0) {
+                const emptyState = document.createElement("div");
+                emptyState.className = "text-center rounded-2xl border border-dashed border-slate-600 bg-slate-800/60 px-5 py-10";
+
+                const icon = document.createElement("i");
+                icon.className = "ph-bold ph-check-square-offset text-3xl text-cyan-400";
+                icon.setAttribute("aria-hidden", "true");
+
+                const title = document.createElement("p");
+                title.className = "text-slate-200 font-medium mt-3";
+                title.textContent = "Nenhuma tarefa por enquanto";
+
+                const description = document.createElement("p");
+                description.className = "text-sm text-slate-400 mt-1";
+                description.textContent = "Adicione uma tarefa acima para começar.";
+
+                emptyState.append(icon, title, description);
+                taskList.append(emptyState);
+                return;
+            }
+
+            tasks.forEach(task => {
+                const card = document.createElement("div");
+                card.className = `group flex items-center gap-3 w-full rounded-2xl border p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-lg ${
+                    task.completed
+                        ? "border-slate-700 bg-slate-800/70"
+                        : "border-slate-700 bg-slate-800 hover:border-cyan-800 hover:bg-slate-800/90"
+                }`;
+
+                const statusButton = createActionButton(
+                    task,
+                    "status",
+                    task.completed ? "ph-check-circle" : "ph-circle",
+                    task.completed ? "Marcar como pendente" : "Marcar como concluída",
+                    task.completed
+                        ? "text-emerald-400 hover:text-emerald-300"
+                        : "text-slate-500 hover:text-cyan-300"
+                );
+                statusButton.className += " shrink-0 text-2xl transition";
+                card.append(statusButton);
+
+                const content = document.createElement("div");
+                content.className = "min-w-0 flex-1";
+
+                const title = document.createElement("p");
+                title.className = `break-words font-medium ${
+                    task.completed ? "text-slate-400 line-through" : "text-slate-100"
+                }`;
+                title.textContent = task.name;
+
+                const status = document.createElement("p");
+                status.className = `text-xs mt-1 ${
+                    task.completed ? "text-emerald-400" : "text-slate-500"
+                }`;
+                status.textContent = task.completed ? "Concluída" : "Pendente";
+                content.append(title, status);
+                card.append(content);
+
+                const actions = document.createElement("div");
+                actions.className = "flex shrink-0 gap-1";
+                const editButton = createActionButton(
+                    task,
+                    "edit",
+                    "ph-pencil-simple",
+                    "Editar tarefa",
+                    "text-slate-400 hover:bg-slate-700 hover:text-cyan-300"
+                );
+                const deleteButton = createActionButton(
+                    task,
+                    "delete",
+                    "ph-trash",
+                    "Excluir tarefa",
+                    "text-slate-400 hover:bg-red-950 hover:text-red-300"
+                );
+                editButton.className += " text-lg p-2 rounded-lg transition";
+                deleteButton.className += " text-lg p-2 rounded-lg transition";
+                actions.append(editButton, deleteButton);
+                card.append(actions);
+                taskList.append(card);
             });
         }
 
-        document.getElementById("listaDeDados").addEventListener("click", function (event) {
+        function createActionButton(task, action, icon, label, color) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.dataset.action = action;
+            button.dataset.id = task.id;
+            button.setAttribute("aria-label", label);
+            button.className = `text-white p-2 rounded ${color}`;
 
-            if (event.target.classList.contains("btnEdit")) {
-                edit(event.target);
-            }
+            const iconElement = document.createElement("i");
+            iconElement.className = `ph-bold ${icon}`;
+            button.append(iconElement);
+            return button;
+        }
 
-        });
+        taskForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            clearTaskError();
+            const name = taskInput.value.trim();
 
-        function edit(elemento) {
-            const id = elemento.id
-            const idOnlyNumber = id.replace("btnEdit", '')
-
-            const posicao = tarefas.findIndex(
-                item => item[0] === Number(idOnlyNumber)
-            );
-
-            console.log(posicao, 'posicao')
-            if (posicao === -1) {
-                console.log("Tarefa não encontrada");
+            if (!name) {
+                showTaskError("Digite o nome da tarefa.");
                 return;
             }
 
-            // console.log("tarefa Editada: " + tarefas[posicao][1]);
+            const updatedTasks = editingTaskId
+                ? tasks.map(task => task.id === editingTaskId ? { ...task, name } : task)
+                : [...tasks, { id: OnlineStorage.createId(), name, completed: false }];
 
-            document.getElementById("tarefa").value = tarefas[posicao][1]
-
-            document.getElementById("confirmEdit").removeAttribute("hidden")
-
-            document.getElementById("btnDelete" + idOnlyNumber).setAttribute("hidden", true)
-
-            document.getElementById("criar").setAttribute("hidden", true)
-
-            document.getElementById("btnStatus" + idOnlyNumber).setAttribute("hidden", true)
-
-            document.getElementById("tarefa").setAttribute("idTarefaEdicao", posicao)
-        }
-
-        document.getElementById("confirmEdit").addEventListener("click", confirmEdit);
-
-        function confirmEdit() {
-            const idTarefa = document.getElementById("tarefa").getAttribute("idTarefaEdicao");
-
-            if (document.getElementById("tarefa").value == "") {
-                alert("Digite a tarefa!")
-                return
-            }
-
-            tarefas[idTarefa][1] = document.getElementById("tarefa").value
-
-            document.getElementById("criar").removeAttribute("hidden")
-            document.getElementById("confirmEdit").setAttribute("hidden", true)
-
-            mostrarLista()
-            document.getElementById("tarefa").value = ""
-            return
-        }
-
-        document.getElementById("listaDeDados").addEventListener("click", function (event) {
-
-            if (event.target.classList.contains("btnStatus")) {
-                updateStatus(event.target);
+            try {
+                await OnlineStorage.set(OnlineStorage.tasksStorageKey(userId), updatedTasks);
+                tasks = updatedTasks;
+                editingTaskId = null;
+                taskInput.value = "";
+                submitButton.innerHTML = '<i class="ph-bold ph-plus"></i>';
+                submitButton.title = "Adicionar tarefa";
+                renderTasks();
+            } catch (error) {
+                showTaskError(error.message);
             }
         });
 
-        function updateStatus(idTarefa) {
-            const id = idTarefa.id;
-            const idOnlyNumber = id.replace("btnStatus", "");
-
-            const posicao = tarefas.findIndex(
-                item => item[0] === Number(idOnlyNumber)
-            );
-
-            if (posicao === -1) {
-                console.log("Tarefa não encontrada");
+        taskList.addEventListener("click", async event => {
+            const button = event.target.closest("button[data-action]");
+            if (!button) {
                 return;
             }
 
-            if (tarefas[posicao][2] === true) {
-                tarefas[posicao][2] = false;
-            } else {
-                tarefas[posicao][2] = true;
+            const task = tasks.find(item => item.id === button.dataset.id);
+            if (!task) {
+                return;
             }
 
-
-            mostrarLista();
-        }
-
-        document.getElementById("listaDeDados").addEventListener("click", function (event) {
-
-            if (event.target.classList.contains("btnDelete")) {
-                deleteTarefa(event.target);
+            if (button.dataset.action === "edit") {
+                editingTaskId = task.id;
+                taskInput.value = task.name;
+                submitButton.innerHTML = '<i class="ph-bold ph-check"></i>';
+                submitButton.title = "Salvar edição";
+                taskInput.focus();
+                return;
             }
 
+            clearTaskError();
+            const updatedTasks = button.dataset.action === "delete"
+                ? tasks.filter(item => item.id !== task.id)
+                : tasks.map(item => item.id === task.id ? { ...item, completed: !item.completed } : item);
+
+            try {
+                await OnlineStorage.set(OnlineStorage.tasksStorageKey(userId), updatedTasks);
+                tasks = updatedTasks;
+                if (editingTaskId === task.id) {
+                    editingTaskId = null;
+                    taskInput.value = "";
+                    submitButton.innerHTML = '<i class="ph-bold ph-plus"></i>';
+                    submitButton.title = "Adicionar tarefa";
+                }
+                renderTasks();
+            } catch (error) {
+                showTaskError(error.message);
+            }
         });
-
-        function deleteTarefa(idTarefa) {
-            const id = idTarefa.id;
-            const idOnlyNumber = parseInt(id.replace("btnDelete", ''));
-
-            console.log("deletar:", idOnlyNumber);
-
-            tarefas = tarefas.filter(tarefa => tarefa[0] !== idOnlyNumber);
-
-            console.log("task:", tarefas);
-
-            mostrarLista();
-        }
-
     </script>
 
 </body>

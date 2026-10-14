@@ -8,8 +8,7 @@
     <title>Login - Lista de Tarefas</title>
 
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/dist/umd/supabase.min.js"></script>
-    <script src="assets/js/supabase.js"></script>
+    <script src="assets/js/api.js"></script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/bold/style.css">
 </head>
@@ -32,9 +31,13 @@
                 <p class="text-slate-400 mt-2">
                     Entre na sua conta
                 </p>
+                <p class="text-amber-300 text-sm mt-3">
+                    Protótipo acadêmico: a API não restringe o acesso aos dados. Não use uma senha real.
+                </p>
             </div>
 
             <!-- Formulário -->
+            <p id="loginError" role="alert" class="text-red-300 text-sm mb-4" hidden></p>
             <form id="loginForm">
 
                 <div class="mb-5">
@@ -51,7 +54,7 @@
                 </div>
 
                 <div class="mb-6">
-                    <label for="senha" class="block text-slate-300 mb-2">
+                    <label for="password" class="block text-slate-300 mb-2">
                         Senha
                     </label>
 
@@ -86,34 +89,36 @@
     </div>
 
     <script>
-        async function loginUser() {
-            const email = document.getElementById("email").value;
+        const loginForm = document.getElementById("loginForm");
+        const loginError = document.getElementById("loginError");
+
+        loginForm.addEventListener("submit", async event => {
+            event.preventDefault();
+            loginError.hidden = true;
+
+            const email = document.getElementById("email").value.trim().toLowerCase();
             const password = document.getElementById("password").value;
 
-            console.log("Email:", email);
-            console.log("Senha:", password);
+            try {
+                const user = await OnlineStorage.get(OnlineStorage.accountStorageKey(email), null);
+                if (!user || !user.salt || !user.passwordHash) {
+                    throw new Error("E-mail ou senha inválidos.");
+                }
 
-            event.preventDefault();
+                const passwordHash = await OnlineStorage.hashPassword(password, user.salt);
+                if (!OnlineStorage.passwordsMatch(passwordHash, user.passwordHash)) {
+                    throw new Error("E-mail ou senha inválidos.");
+                }
 
-            const resultado = await supabaseClient
-                .from("users")
-                .select()
-                .eq('email', email)
-
-
-            if (resultado.data.length > 0 && resultado.data[0].password === password) {
-                console.log("Login bem-sucedido!");
                 sessionStorage.setItem("email", email);
-                sessionStorage.setItem("userID", resultado.data[0].id);
+                sessionStorage.setItem("userID", user.id);
+                sessionStorage.setItem("userName", user.name);
                 window.location.href = "appTaskList.html";
-            } else {
-                alert("Credenciais inválidas. Por favor, verifique seu email e senha.");
-                console.log("Credenciais inválidas.");
+            } catch (error) {
+                loginError.textContent = error.message;
+                loginError.hidden = false;
             }
-
-            console.log("Resultado:", resultado);
-
-        }
+        });
     </script>
 
 </body>

@@ -8,8 +8,7 @@
     <title>Cadastro - Lista de Tarefas</title>
 
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.4/dist/umd/supabase.min.js"></script>
-    <script src="assets/js/supabase.js"></script>
+    <script src="assets/js/api.js"></script>
 
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/bold/style.css">
@@ -33,8 +32,12 @@
                 <p class="text-slate-400 mt-2">
                     Cadastre-se para começar
                 </p>
+                <p class="text-amber-300 text-sm mt-3">
+                    Protótipo acadêmico: a API não restringe o acesso aos dados. Não use uma senha real.
+                </p>
             </div>
 
+            <p id="registerError" role="alert" class="text-red-300 text-sm mb-4" hidden></p>
             <!-- Formulário -->
             <form id="registerForm">
 
@@ -73,7 +76,7 @@
                 </div>
 
                 <div class="mb-5">
-                    <label for="senha" class="block text-slate-300 mb-2">
+                    <label for="password" class="block text-slate-300 mb-2">
                         Senha
                     </label>
 
@@ -84,6 +87,7 @@
                             type="password"
                             id="password"
                             placeholder="Digite sua senha"
+                            minlength="8"
                             required
                             class="appearance-none bg-transparent border-none w-full text-slate-100 placeholder-slate-500 focus:outline-none">
                     </div>
@@ -131,41 +135,53 @@
     </div>
 
      <script>
+         const registerForm = document.getElementById("registerForm");
+         const registerError = document.getElementById("registerError");
 
-        async function createUser() {
-            const nome = document.getElementById("nome").value;
-            const email = document.getElementById("email").value;
-            const password = document.getElementById("password").value;
+         registerForm.addEventListener("submit", async event => {
+             event.preventDefault();
+             registerError.hidden = true;
 
-            console.log("Nome:", nome);
-            console.log("Email:", email);
-            console.log("Senha:", password);
+             const name = document.getElementById("nome").value.trim();
+             const email = document.getElementById("email").value.trim().toLowerCase();
+             const password = document.getElementById("password").value;
+             const confirmation = document.getElementById("confirmarSenha").value;
 
-            const { data, error } = await supabaseClient
-                .from('users')
-                .insert([
-                    { name: nome, email: email, password: password }
-                ])
+             if (password.length < 8) {
+                 registerError.textContent = "A senha precisa ter pelo menos 8 caracteres.";
+                 registerError.hidden = false;
+                 return;
+             }
 
-            if (error) {
-                console.error('Erro ao criar usuário:', error)
-            } else {
-                console.log('Usuário criado com sucesso:', data)
-            }
+             if (password !== confirmation) {
+                 registerError.textContent = "As senhas não coincidem.";
+                 registerError.hidden = false;
+                 return;
+             }
 
-            event.preventDefault();
+             try {
+                 const key = OnlineStorage.accountStorageKey(email);
+                 const existingUser = await OnlineStorage.get(key, null);
+                 if (existingUser) {
+                     throw new Error("Já existe uma conta cadastrada com este e-mail.");
+                 }
 
-            window.location.replace("login.html");
+                 const salt = OnlineStorage.createSalt();
+                 const passwordHash = await OnlineStorage.hashPassword(password, salt);
+                 await OnlineStorage.set(key, {
+                     id: OnlineStorage.createId(),
+                     name,
+                     salt,
+                     passwordHash
+                 });
 
-            // document.getElementById("myForm").submit();
-
-        }
-
-
-
-
-        // console.log(SUPABASE_URL)
-    </script>
+                 window.location.replace("login.html");
+             } catch (error) {
+                 registerError.textContent = error.message;
+                 registerError.hidden = false;
+             }
+         });
+     </script>
 
 </body>
 
