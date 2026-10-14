@@ -15,18 +15,18 @@
         href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/bold/style.css">
 </head>
 
-<body class="bg-slate-700 min-h-screen flex items-center justify-center px-4">
+<body class="bg-slate-700 min-h-screen flex items-start sm:items-center justify-center px-3 py-6 sm:px-4 sm:py-8">
 
-    <div id="app" class="w-full max-w-md bg-slate-800 shadow-lg rounded-lg overflow-hidden border border-slate-700">
+    <div id="app" class="w-full max-w-md bg-slate-800 shadow-lg rounded-2xl overflow-hidden border border-slate-700">
 
-        <div class="px-6 py-8">
+        <div class="px-5 py-6 sm:px-6 sm:py-8">
 
             <!-- Título -->
             <div class="text-center mb-8">
                 <i class="ph-bold ph-user-plus text-cyan-400 text-4xl"></i>
 
                 <h1
-                    class="text-3xl mt-3 font-bold bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                    class="text-2xl sm:text-3xl mt-3 font-bold bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
                     Criar conta
                 </h1>
 
@@ -54,7 +54,7 @@
                             placeholder="Digite seu nome"
                             required
                             v-model="name"
-                            class="appearance-none bg-transparent border-none w-full text-slate-100 placeholder-slate-500 focus:outline-none">
+                            class="appearance-none bg-transparent border-none w-full min-w-0 text-base text-slate-100 placeholder-slate-500 focus:outline-none">
                     </div>
                 </div>
 
@@ -72,7 +72,7 @@
                             placeholder="Digite seu e-mail"
                             required
                             v-model="email"
-                            class="appearance-none bg-transparent border-none w-full text-slate-100 placeholder-slate-500 focus:outline-none">
+                            class="appearance-none bg-transparent border-none w-full min-w-0 text-base text-slate-100 placeholder-slate-500 focus:outline-none">
                     </div>
                 </div>
 
@@ -91,7 +91,7 @@
                             minlength="8"
                             required
                             v-model="password"
-                            class="appearance-none bg-transparent border-none w-full text-slate-100 placeholder-slate-500 focus:outline-none">
+                            class="appearance-none bg-transparent border-none w-full min-w-0 text-base text-slate-100 placeholder-slate-500 focus:outline-none">
                     </div>
                 </div>
 
@@ -109,14 +109,14 @@
                             placeholder="Digite a senha novamente"
                             required
                             v-model="confirmation"
-                            class="appearance-none bg-transparent border-none w-full text-slate-100 placeholder-slate-500 focus:outline-none">
+                            class="appearance-none bg-transparent border-none w-full min-w-0 text-base text-slate-100 placeholder-slate-500 focus:outline-none">
                     </div>
                 </div>
 
                 <button
                     type="submit"
                     :disabled="submitting"
-                    class="w-full bg-cyan-800 hover:bg-cyan-700 text-white font-medium py-3 rounded-lg transition">
+                    class="w-full min-h-12 bg-cyan-800 hover:bg-cyan-700 text-white font-medium py-3 rounded-lg transition">
                     <i class="ph-bold ph-user-plus mr-2"></i>
                     Criar conta
                 </button>
